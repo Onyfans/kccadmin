@@ -1,0 +1,3 @@
+/home/evan/code/kccadmin/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/evan/code/kccadmin/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/evan/code/kccadmin/cmake-build-debug/CMakeFiles/kcc.dir
