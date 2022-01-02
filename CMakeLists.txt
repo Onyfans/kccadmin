@@ -7,6 +7,8 @@ find_package(OpenGL REQUIRED)
 
 set(SRC
     src/main.cpp
+    src/gui.cpp
+    src/raider.cpp
 
     src/imgui.cpp
     src/imgui_impl_opengl3.cpp
@@ -16,7 +18,7 @@ set(SRC
     src/imgui_widgets.cpp
 
     src/imgui_demo.cpp
-    src/gui.cpp)
+)
 
 add_executable(kcc ${SRC})
 target_include_directories(kcc PRIVATE

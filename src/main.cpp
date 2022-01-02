@@ -46,6 +46,18 @@ static void cleanup() {
 }
 
 int main() {
+    mysqlpp::Connection db;
+    char* dbpass = std::getenv("KCC_DB_PASS");
+    if (dbpass == nullptr) {
+        std::cout << "KCC_DB_PASS does not exist" << std::endl;
+        return 1;
+    } else {
+        if (!db.connect("kcc", "fputs.com", "kcc", dbpass, 0)) {
+            std::cout << "Failed to connect to database!" << std::endl;
+            return 1;
+        }
+    }
+
     int r = setup_SDL();
     if (r != 0) {
         return r;
@@ -58,26 +70,7 @@ int main() {
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    while (gui_tick(window, io)) {}
-
-    /* TODO: Remove temp mysql++ test */
-    char* dbpass = std::getenv("KCC_DB_PASS");
-    if (dbpass == nullptr) {
-        std::cout << "KCC_DB_PASS does not exist" << std::endl;
-    } else {
-        mysqlpp::Connection db;
-        if (!db.connect("kcc", "fputs.com", "kcc", dbpass, 0)) {
-            std::cout << "Failed to connect to database!" << std::endl;
-            return 1;
-        }
-
-        mysqlpp::Query query = db.query("select * from raiders");
-        mysqlpp::StoreQueryResult res = query.store();
-
-        for (const auto &raider : res) {
-            std::cout << raider["Name"] << "\t" << raider["Points"] << std::endl;
-        }
-    }
+    while (gui_tick(window, io, db)) {}
 
     cleanup();
     return 0;

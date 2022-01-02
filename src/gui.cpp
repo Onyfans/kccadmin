@@ -1,14 +1,33 @@
+#include <vector>
+#include <cstdlib>
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
 #include "gui.h"
+#include "raider.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
 
 
 const ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-bool gui_tick(SDL_Window *window, ImGuiIO& io) {
+std::vector<Raider> get_raiders(mysqlpp::Connection& db) {
+    mysqlpp::Query query = db.query("select * from raiders");
+    mysqlpp::StoreQueryResult res = query.store();
+    std::vector<Raider> raiders;
+
+    for (const auto &raider : res) {
+        raiders.emplace_back(
+            std::atoi(raider["Id"]),
+            raider["Name"].c_str(),
+            std::atoi(raider["Points"])
+        );
+    }
+    return raiders;
+}
+
+bool gui_tick(SDL_Window *window, ImGuiIO& io, mysqlpp::Connection& db) {
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
@@ -27,7 +46,9 @@ bool gui_tick(SDL_Window *window, ImGuiIO& io) {
     ImGui::NewFrame();
 
     // TODO: literally everything
+    get_raiders(db);
     ImGui::ShowDemoWindow();
+
 
     // Rendering
     ImGui::Render();
