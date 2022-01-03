@@ -11,6 +11,7 @@ struct Raider {
     int id;
     std::string name;
     int points;
+    bool here;
 };
 
 void raider_inc(Raider*, mysqlpp::Connection&, int);
