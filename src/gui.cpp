@@ -27,7 +27,9 @@ std::vector<Raider> get_raiders(mysqlpp::Connection &db) {
         raiders.emplace_back(
                 std::atoi(raider["Id"]),
                 raider["Name"].c_str(),
-                std::atoi(raider["Points"])
+                std::atoi(raider["Points"]),
+                raider["Class"].c_str(),
+                raider["Spec"].c_str()
         );
     }
     return raiders;
@@ -69,13 +71,19 @@ bool gui_tick(SDL_Window *window, ImGuiIO &io, mysqlpp::Connection &db) {
         static ImGuiTableFlags flags =
                 ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV |
                 ImGuiTableFlags_NoBordersInBody;
-        if (ImGui::BeginTable("KCC Loot Table", 4, flags, ImVec2(0.0f, ImGui::CalcTextSize("A").x * 15), 0.0f)) {
+        if (ImGui::BeginTable("KCC Loot Table", 6, flags, ImVec2(0.0f, ImGui::CalcTextSize("A").x * 15), 0.0f)) {
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 0.0f, 1);
             ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed, 0.0f,
                                     2);
+            ImGui::TableSetupColumn("Class",
+                                    ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed,
+                                    0.0f, 3);
+            ImGui::TableSetupColumn("Spec",
+                                    ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed,
+                                    0.0f, 4);
             ImGui::TableSetupColumn("Points",
                                     ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthStretch,
-                                    0.0f, 3);
+                                    0.0f, 5);
             ImGui::TableSetupScrollFreeze(0, 1); // Make row always visible
             ImGui::TableHeadersRow();
 
@@ -105,6 +113,10 @@ bool gui_tick(SDL_Window *window, ImGuiIO &io, mysqlpp::Connection &db) {
                         raider_zero(r, db, raidmaxpoints);
                     }
                     ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(r->cls.c_str());
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(r->spec.c_str());
+                    ImGui::TableNextColumn();
                     ImGui::Text("%d", r->points);
                     ImGui::PopID();
                 }
@@ -121,15 +133,24 @@ bool gui_tick(SDL_Window *window, ImGuiIO &io, mysqlpp::Connection &db) {
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
     if (ImGui::BeginPopupModal("Create", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        static char buf[32];
-        ImGui::InputText("Name", buf, 32);
+        static char name_buf[32], class_buf[32], spec_buf[32];
+        ImGui::InputText("Name", name_buf, 32);
+        ImGui::InputText("Class", class_buf, 32);
+        ImGui::InputText("Spec", spec_buf, 32);
 
         if (ImGui::Button("OK", ImVec2(120, 0))) {
-            char querystr[128];
-            std::sprintf(querystr, "INSERT into raiders (name, points) values ('%s', 0)", buf);
-            mysqlpp::Query query = db.query(querystr);
-            query.exec();
-            ImGui::CloseCurrentPopup();
+            if (std::strlen(name_buf) == 0 || std::strlen(class_buf) == 0 || std::strlen(spec_buf) == 0) {
+                // TODO: ERROR
+            } else {
+                char querystr[256];
+                std::sprintf(querystr, "INSERT into raiders (name, points, Class, Spec) values ('%s', 0, '%s', '%s')", name_buf, class_buf, spec_buf);
+                mysqlpp::Query query = db.query(querystr);
+                query.exec();
+                name_buf[0] = '\0';
+                class_buf[0] = '\0';
+                spec_buf[0] = '\0';
+                ImGui::CloseCurrentPopup();
+            }
         }
 
         ImGui::SetItemDefaultFocus();
@@ -142,6 +163,8 @@ bool gui_tick(SDL_Window *window, ImGuiIO &io, mysqlpp::Connection &db) {
     if (ImGui::Button("Delete Raider")) {
         ImGui::OpenPopup("Delete");
     }
+    ImGui::SameLine();
+    ImGui::Text("Total Raiders: %lu", raiders.size());
 
     center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));

@@ -2,8 +2,8 @@
 
 #include "raider.h"
 
-Raider::Raider(int id, const char* name, int points) :
-    id(id), name(name), points(points) {}
+Raider::Raider(int id, const char* name, int points, const char* cls, const char* spec) :
+    id(id), name(name), points(points), cls(cls), spec(spec) {}
 
 bool Raider::operator<(const Raider &o) const {
     return name < o.name;

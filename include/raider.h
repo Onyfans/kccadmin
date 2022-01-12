@@ -5,13 +5,15 @@
 #include <mysql++/mysql++.h>
 
 struct Raider {
-    Raider(int, const char*, int);
+    Raider(int, const char*, int, const char*, const char*);
     bool operator < (const Raider& o) const;
 
     int id;
     std::string name;
     int points;
     bool here;
+    std::string cls;
+    std::string spec;
 };
 
 void raider_inc(Raider*, mysqlpp::Connection&, int);
