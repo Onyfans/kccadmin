@@ -2,4 +2,4 @@
 
 Administrative program for the KCC Loot Tracker
 
-![](sshot.png)
+![](pic.png)
