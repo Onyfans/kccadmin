@@ -13,10 +13,7 @@
 #include "imgui_impl_opengl3.h"
 
 const ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-static std::map<std::string, int> raids{
-        {"Molten Core",    10 * 3 + 1},
-        {"Blackwing Lair", 9 * 3 + 1},
-};
+std::map<std::string, bool> active;
 
 std::vector<Raider> get_raiders(mysqlpp::Connection &db) {
     mysqlpp::Query query = db.query("select * from raiders");
@@ -33,6 +30,20 @@ std::vector<Raider> get_raiders(mysqlpp::Connection &db) {
         );
     }
     return raiders;
+}
+
+void populate_active(std::vector<Raider>& raiders) {
+    if (active.empty()) {
+        for (const auto& r : raiders) {
+            active.emplace(r.name, false);
+        }
+    } else {
+        for (const auto& r : raiders) {
+            if (active.find(r.name) == active.end()) {
+                active.emplace(r.name, false);
+            }
+        }
+    }
 }
 
 bool gui_tick(SDL_Window *window, ImGuiIO &io, mysqlpp::Connection &db) {
@@ -54,6 +65,7 @@ bool gui_tick(SDL_Window *window, ImGuiIO &io, mysqlpp::Connection &db) {
     ImGui::NewFrame();
 
     auto raiders = get_raiders(db);
+    populate_active(raiders);
 
     static ImGuiWindowFlags flags =
             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
@@ -63,27 +75,25 @@ bool gui_tick(SDL_Window *window, ImGuiIO &io, mysqlpp::Connection &db) {
     ImGui::SetNextWindowSize(viewport->Size);
     bool p_open;
 
-    // TODO: Create Raid Chooser
-    auto raidmaxpoints = raids["Molten Core"];
-
     // Loot Table
     if (ImGui::Begin("KCC Loot Admin", &p_open, flags)) {
         static ImGuiTableFlags flags =
                 ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV |
                 ImGuiTableFlags_NoBordersInBody;
         if (ImGui::BeginTable("KCC Loot Table", 6, flags, ImVec2(0.0f, ImGui::CalcTextSize("A").x * 15), 0.0f)) {
-            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 0.0f, 1);
+            ImGui::TableSetupColumn("Active", ImGuiTableColumnFlags_WidthFixed, 0.0f, 1);
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 0.0f, 2);
             ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed, 0.0f,
-                                    2);
+                                    3);
             ImGui::TableSetupColumn("Class",
                                     ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed,
-                                    0.0f, 3);
+                                    0.0f, 4);
             ImGui::TableSetupColumn("Spec",
                                     ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed,
-                                    0.0f, 4);
+                                    0.0f, 5);
             ImGui::TableSetupColumn("Points",
                                     ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthStretch,
-                                    0.0f, 5);
+                                    0.0f, 6);
             ImGui::TableSetupScrollFreeze(0, 1); // Make row always visible
             ImGui::TableHeadersRow();
 
@@ -99,18 +109,20 @@ bool gui_tick(SDL_Window *window, ImGuiIO &io, mysqlpp::Connection &db) {
                     ImGui::PushID(r->id);
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
+                    ImGui::Checkbox("", &(active[r->name]));
+                    ImGui::TableNextColumn();
                     ImGui::TextUnformatted(r->name.c_str());
                     ImGui::TableNextColumn();
                     if (ImGui::SmallButton("Inc")) {
-                        raider_inc(r, db, raidmaxpoints);
+                        raider_inc(r, db);
                     }
                     ImGui::SameLine();
                     if (ImGui::SmallButton("Dec")) {
-                        raider_dec(r, db, raidmaxpoints);
+                        raider_dec(r, db);
                     }
                     ImGui::SameLine();
                     if (ImGui::SmallButton("Zero")) {
-                        raider_zero(r, db, raidmaxpoints);
+                        raider_zero(r, db);
                     }
                     ImGui::TableNextColumn();
                     ImGui::TextUnformatted(r->cls.c_str());
@@ -199,21 +211,45 @@ bool gui_tick(SDL_Window *window, ImGuiIO &io, mysqlpp::Connection &db) {
     }
 
     ImGui::Separator();
+    if (ImGui::Button("+1 Active")) {
+        for (auto &raider: raiders) {
+            if (active[raider.name]) {
+                raider_inc(&raider, db);
+            }
+        }
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("-1 Active")) {
+        for (auto &raider: raiders) {
+            if (active[raider.name]) {
+                raider_dec(&raider, db);
+            }
+        }
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Zero Active")) {
+        for (auto &raider: raiders) {
+            if (active[raider.name]) {
+                raider_zero(&raider, db);
+            }
+        }
+    }
+    ImGui::SameLine();
     if (ImGui::Button("+1 All")) {
         for (auto &raider: raiders) {
-            raider_inc(&raider, db, raidmaxpoints);
+            raider_inc(&raider, db);
         }
     }
     ImGui::SameLine();
     if (ImGui::Button("-1 All")) {
         for (auto &raider: raiders) {
-            raider_dec(&raider, db, raidmaxpoints);
+            raider_dec(&raider, db);
         }
     }
     ImGui::SameLine();
     if (ImGui::Button("Zero All")) {
         for (auto &raider: raiders) {
-            raider_zero(&raider, db, raidmaxpoints);
+            raider_zero(&raider, db);
         }
     }
 

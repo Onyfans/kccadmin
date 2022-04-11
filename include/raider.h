@@ -11,13 +11,12 @@ struct Raider {
     int id;
     std::string name;
     int points;
-    bool here;
     std::string cls;
     std::string spec;
 };
 
-void raider_inc(Raider*, mysqlpp::Connection&, int);
-void raider_dec(Raider*, mysqlpp::Connection&, int);
-void raider_zero(Raider*, mysqlpp::Connection&, int);
+void raider_inc(Raider*, mysqlpp::Connection&);
+void raider_dec(Raider*, mysqlpp::Connection&);
+void raider_zero(Raider*, mysqlpp::Connection&);
 
 #endif //KCC_RAIDER_H
